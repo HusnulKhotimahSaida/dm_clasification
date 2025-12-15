@@ -91,44 +91,29 @@ if st.button("🚀 Jalankan Model"):
     st.success("Model berhasil dijalankan!")
 
     # =====================
-    # HASIL PREDIKSI
+    # HASIL PREDIKSI USER
     # =====================
     st.subheader("📌 Hasil Prediksi")
 
-    # --- Klasifikasi ---
     status = clf.predict(input_df)[0]
     prob = clf.predict_proba(input_df)[0][1]
+    churn = reg.predict(input_df)[0]
 
-    if status == 1:
-        st.success(f"Status Subscription: **BERLANGGANAN** (Probabilitas: {prob:.2f})")
-    else:
-        st.warning(f"Status Subscription: **TIDAK BERLANGGANAN** (Probabilitas: {prob:.2f})")
-
-    # --- Regresi ---
-    pred_churn = reg.predict(input_df)[0]
-
-    # Interpretasi tingkat risiko
-    if pred_churn < 0.34:
-        risk_level = "🟢 Rendah"
-        risk_desc = "Pelanggan memiliki risiko churn yang rendah."
-    elif pred_churn < 0.67:
-        risk_level = "🟡 Sedang"
-        risk_desc = "Pelanggan memiliki risiko churn sedang dan perlu perhatian."
-    else:
-        risk_level = "🔴 Tinggi"
-        risk_desc = "Pelanggan memiliki risiko churn tinggi dan perlu tindakan segera."
-
-    st.info(f"Prediksi Churn Risk: **{pred_churn:.2f}**")
-    st.write("Tingkat Risiko Churn:", risk_level)
-    st.write(risk_desc)
+    st.write(
+        "Status Subscription:",
+        "Berlangganan" if status == 1 else "Tidak Berlangganan"
+    )
+    st.write("Probabilitas Subscription:", round(prob, 2))
+    st.write("Prediksi Churn Risk:", round(churn, 2))
 
     # =====================
-    # EVALUASI MODEL
+    # EVALUASI KLASIFIKASI
     # =====================
     st.header("📈 Evaluasi Model")
 
-    # --- Confusion Matrix ---
+    st.subheader("🔵 Evaluasi Klasifikasi (Confusion Matrix)")
     cm = confusion_matrix(yc_test, clf.predict(Xc_test))
+
     fig1, ax1 = plt.subplots()
     ax1.imshow(cm)
     ax1.set_title("Confusion Matrix - Subscription")
@@ -136,25 +121,35 @@ if st.button("🚀 Jalankan Model"):
     ax1.set_ylabel("Actual")
     st.pyplot(fig1)
 
-    st.write("Accuracy (Klasifikasi):", accuracy_score(yc_test, clf.predict(Xc_test)))
+    st.write("Accuracy:", accuracy_score(yc_test, clf.predict(Xc_test)))
 
-    # --- Evaluasi Regresi ---
+    # =====================
+    # EVALUASI REGRESI
+    # =====================
+    st.subheader("🟢 Evaluasi Regresi Churn Risk")
+
     y_pred_r = reg.predict(Xr_test)
-    st.write("MAE (Regresi Churn Risk):", mean_absolute_error(yr_test, y_pred_r))
+    st.write("MAE (Mean Absolute Error):", round(
+        mean_absolute_error(yr_test, y_pred_r), 3
+    ))
 
-    # --- Visualisasi Regresi ---
-    st.subheader("📉 Visualisasi Regresi Churn Risk")
+    # =====================
+    # VISUALISASI REGRESI (DIAGRAM GARIS)
+    # =====================
+    st.subheader("📉 Visualisasi Regresi (Diagram Garis)")
+
+    # Ambil sebagian data agar grafik jelas
+    sample_size = 50
+    y_actual = yr_test.iloc[:sample_size].reset_index(drop=True)
+    y_predicted = pd.Series(y_pred_r[:sample_size])
 
     fig2, ax2 = plt.subplots()
-    ax2.scatter(yr_test, y_pred_r, alpha=0.6)
-    ax2.plot(
-        [yr_test.min(), yr_test.max()],
-        [yr_test.min(), yr_test.max()],
-        linestyle="--"
-    )
-    ax2.set_xlabel("Actual Churn Risk")
-    ax2.set_ylabel("Predicted Churn Risk")
-    ax2.set_title("Actual vs Predicted Churn Risk")
+    ax2.plot(y_actual, label="Actual Churn Risk", marker="o")
+    ax2.plot(y_predicted, label="Predicted Churn Risk", marker="x")
+    ax2.set_xlabel("Data ke-")
+    ax2.set_ylabel("Churn Risk")
+    ax2.set_title("Perbandingan Actual vs Predicted Churn Risk")
+    ax2.legend()
     st.pyplot(fig2)
 
 # =====================
